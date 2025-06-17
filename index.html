@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuclear Blast Survival Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      transition: all 0.3s ease-in-out;
+    }
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0a0f24, #1c1f3a);
+      color: #e6e6e6;
+      overflow-x: hidden;
+      animation: bodyFade 2s ease-in;
+    }
+    header {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      animation: fadeInDown 2s ease-out;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      color: #00ffe1;
+      text-shadow: 0 0 10px #00ffe1;
+    }
+    header p {
+      font-size: 1.1rem;
+      color: #ccc;
+    }
+    .section {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+      animation: fadeIn 1.5s ease-out;
+      transform: scale(1);
+    }
+    .section:hover {
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+      transform: scale(1.03);
+    }
+    .section h2 {
+      color: #00ffe1;
+      border-bottom: 1px solid #00ffe1;
+      padding-bottom: 0.5rem;
+    }
+    .section ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .section li {
+      margin: 0.6rem 0;
+      position: relative;
+      padding-left: 2rem;
+    }
+    .section li::before {
+      content: '⚠️';
+      position: absolute;
+      left: 0;
+      animation: pulse 1.5s infinite;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    footer span {
+      color: #00ffe1;
+      text-shadow: 0 0 5px #00ffe1;
+    }
+    .glow-card:hover {
+      background: rgba(0, 255, 255, 0.08);
+      transform: scale(1.02) rotate(0.5deg);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    }
+    .section:hover h2 {
+      text-shadow: 0 0 10px #00ffe1;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes bodyFade {
+      0% { background-position: 0 0; }
+      100% { background-position: 100% 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>How to Survive a Nuclear Blast</h1>
+    <p>Critical Preparations for the Unexpected</p>
+  </header>
+
+  <div class="section glow-card">
+    <h2>📦 Preparation Before a Blast</h2>
+    <ul>
+      <li>Create an emergency kit with food, water, meds, flashlight, and batteries (enough for 3–14 days).</li>
+      <li>Designate a shelter space — preferably a basement or room with minimal windows and thick walls.</li>
+      <li>Stay informed: Follow nuclear alerts via trusted news or emergency channels.</li>
+      <li>Stock potassium iodide tablets to help block radioactive iodine absorption.</li>
+    </ul>
+  </div>
+
+  <div class="section glow-card">
+    <h2>💥 During the Blast</h2>
+    <ul>
+      <li>Drop to the ground and cover your head — avoid windows and look away from the blast.</li>
+      <li>Shield yourself behind a solid object or indoors as fast as possible.</li>
+      <li>Remain indoors for at least 24–48 hours or until advised otherwise.</li>
+    </ul>
+  </div>
+
+  <div class="section glow-card">
+    <h2>☢️ Post-Blast Survival</h2>
+    <ul>
+      <li>Avoid touching fallout dust; if outside, remove clothing and shower as soon as possible.</li>
+      <li>Seal windows and doors with plastic sheeting and duct tape if possible.</li>
+      <li>Only consume packaged or sealed food and bottled water.</li>
+      <li>Use radios to listen for evacuation or all-clear instructions.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>Stay prepared. Stay safe. Powered by <span>Leading Edge (L.E.V.I)</span> &copy; 2025</p>
+  </footer>
+</body>
+</html>
