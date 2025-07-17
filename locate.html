@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Path Tracer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #map {
+      border: 2px solid #444;
+      background: #222;
+      width: 100vw;
+      height: 90vh;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #0f0;
+      color: #000;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="map"></canvas>
+  <button onclick="startTracking()">Start Tracking</button>
+
+  <script>
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.9;
+
+    let positions = [];
+    let watchId = null;
+    let firstPos = null;
+
+    function startTracking() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log("Lat:", latitude, "Lng:", longitude);
+
+          // Set initial reference point
+          if (!firstPos) {
+            firstPos = { lat: latitude, lng: longitude };
+          }
+
+          // Convert lat/lng to x/y (relative to firstPos)
+          const scale = 100000; // adjust for zoom level
+          const x = canvas.width / 2 + (longitude - firstPos.lng) * scale;
+          const y = canvas.height / 2 - (latitude - firstPos.lat) * scale;
+
+          positions.push({ x, y });
+
+          drawPath();
+        },
+        (err) => {
+          alert("Error getting location: " + err.message);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        }
+      );
+    }
+
+    function drawPath() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = "lime";
+      ctx.lineWidth = 4;
+
+      for (let i = 0; i < positions.length; i++) {
+        const p = positions[i];
+        if (i === 0) {
+          ctx.moveTo(p.x, p.y);
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+
+      // Draw current position
+      const last = positions[positions.length - 1];
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+    }
+  </script>
+</body>
+</html>
