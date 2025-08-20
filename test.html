@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academia Landing Page</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md py-4 px-6 flex justify-between items-center sticky top-0 z-50">
+    <div class="text-2xl font-bold text-green-700">Academia</div>
+    <div class="hidden md:flex space-x-4">
+      <a href="#about" class="hover:text-green-700">About</a>
+      <a href="#events" class="hover:text-green-700">Events</a>
+      <a href="#donate" class="hover:text-green-700">Donate</a>
+      <a href="#contact" class="hover:text-green-700">Contact</a>
+      <a href="signup.html" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Sign Up</a>
+    </div>
+    <!-- Mobile menu button -->
+    <div class="md:hidden">
+      <button id="menu-btn" class="text-green-700 font-bold">☰</button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden flex-col bg-white px-6 py-4 space-y-2 md:hidden">
+    <a href="#about" class="hover:text-green-700">About</a>
+    <a href="#events" class="hover:text-green-700">Events</a>
+    <a href="#donate" class="hover:text-green-700">Donate</a>
+    <a href="#contact" class="hover:text-green-700">Contact</a>
+    <a href="signup.html" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Sign Up</a>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="bg-green-50 py-16 px-6 text-center md:text-left md:flex md:items-center md:justify-between max-w-6xl mx-auto">
+    <div class="md:w-1/2">
+      <h1 class="text-3xl md:text-5xl font-bold mb-4">Welcome to Academia</h1>
+      <p class="text-lg md:text-xl mb-6">Empowering learners through events, workshops, and community donations. Join us and be part of the future of education.</p>
+      <a href="signup.html" class="bg-green-700 text-white px-6 py-3 rounded text-lg hover:bg-green-800">Get Started</a>
+    </div>
+    <div class="mt-8 md:mt-0 md:w-1/2">
+      <img src="https://placeimg.com/500/400/education" alt="Education Hero" class="rounded shadow-lg mx-auto md:ml-auto">
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-16 px-6 bg-white">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">About Us</h2>
+    <p class="max-w-3xl mx-auto text-center md:text-left">Academia is a platform connecting students, educators, and communities through meaningful educational events. Our mission is to create accessible opportunities and support lifelong learning.</p>
+  </section>
+
+  <!-- Events Section -->
+  <section id="events" class="py-16 px-6 bg-gray-50">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-10">Upcoming Events</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <!-- Event Card -->
+      <div class="bg-white p-6 rounded shadow hover:shadow-lg transition">
+        <img src="https://placeimg.com/400/200/tech" class="rounded mb-4">
+        <h3 class="text-xl font-semibold mb-2">Web Development Workshop</h3>
+        <p class="mb-2">Learn to build modern web applications with hands-on practice.</p>
+        <p class="text-sm text-gray-500">Aug 30, 2025</p>
+      </div>
+      <div class="bg-white p-6 rounded shadow hover:shadow-lg transition">
+        <img src="https://placeimg.com/400/200/arch" class="rounded mb-4">
+        <h3 class="text-xl font-semibold mb-2">AI in Education Seminar</h3>
+        <p class="mb-2">Explore how AI is transforming learning experiences worldwide.</p>
+        <p class="text-sm text-gray-500">Sep 12, 2025</p>
+      </div>
+      <div class="bg-white p-6 rounded shadow hover:shadow-lg transition">
+        <img src="https://placeimg.com/400/200/nature" class="rounded mb-4">
+        <h3 class="text-xl font-semibold mb-2">Community Outreach</h3>
+        <p class="mb-2">Participate in initiatives that bring education to underserved areas.</p>
+        <p class="text-sm text-gray-500">Oct 5, 2025</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Donate Section -->
+  <section id="donate" class="py-16 px-6 bg-green-50 text-center">
+    <h2 class="text-3xl md:text-4xl font-bold mb-6">Support Our Cause</h2>
+    <p class="mb-6 max-w-xl mx-auto">Your donations help us organize events, provide scholarships, and expand access to learning opportunities worldwide.</p>
+    <a href="donations.html" class="bg-green-700 text-white px-6 py-3 rounded text-lg hover:bg-green-800">Donate Now</a>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-16 px-6 bg-white">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Contact Us</h2>
+    <p class="text-center mb-6">Email: info@academia.com | Phone: +123 456 7890</p>
+    <form class="max-w-md mx-auto space-y-4">
+      <input type="text" placeholder="Your Name" class="w-full border border-gray-300 rounded p-3">
+      <input type="email" placeholder="Your Email" class="w-full border border-gray-300 rounded p-3">
+      <textarea placeholder="Your Message" class="w-full border border-gray-300 rounded p-3"></textarea>
+      <button type="submit" class="bg-green-700 text-white w-full py-3 rounded hover:bg-green-800">Send Message</button>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-6 text-center">
+    &copy; 2025 Academia. All rights reserved.
+  </footer>
+
+  <!-- Mobile menu toggle script -->
+  <script>
+    const menuBtn = document.getElementById('menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  </script>
+
+</body>
+      </html>
+      
