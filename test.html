@@ -2,11 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Step Retracer</title>
+  <title>Step Retracer with Indicator</title>
   <style>
     body { text-align: center; font-family: sans-serif; }
-    canvas { border: 1px solid #000; margin-top: 10px; }
-    button { margin: 5px; padding: 10px; }
+    canvas { border: 2px solid #000; margin-top: 10px; background: #f5f5f5; }
+    button { margin: 10px; padding: 15px 25px; font-size: 18px; }
+    #indicator {
+      font-size: 24px; 
+      font-weight: bold; 
+      margin-top: 15px;
+    }
+    #arrow {
+      font-size: 50px;
+      display: block;
+      margin-top: 5px;
+      transform-origin: center;
+    }
   </style>
 </head>
 <body>
@@ -16,47 +27,53 @@
   <button onclick="retrace()">Retrace</button>
   <p id="status">Idle...</p>
   <canvas id="map" width="400" height="400"></canvas>
+  <div id="indicator">
+    <span id="instruction"></span>
+    <span id="arrow">⬆️</span>
+  </div>
 
   <script>
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
     let tracking = false;
-    let position = {x: 200, y: 200};
+    let position = {x: 200, y: 350}; // start near bottom
     let path = [];
     let lastStepTime = Date.now();
     let currentHeading = 0;
+    const stepSize = 50; // bigger steps
+    const circleRadius = 15;
 
     // Draw starting point
-    ctx.fillStyle = "blue";
-    ctx.beginPath();
-    ctx.arc(position.x, position.y, 5, 0, Math.PI * 2);
-    ctx.fill();
+    drawCircle(position.x, position.y);
+
+    function drawCircle(x, y, color="blue") {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     function startTracking() {
       if (tracking) return;
       tracking = true;
       path = [];
-      position = {x: 200, y: 200};
+      position = {x: 200, y: 350};
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = "blue";
-      ctx.beginPath();
-      ctx.arc(position.x, position.y, 5, 0, Math.PI * 2);
-      ctx.fill();
+      drawCircle(position.x, position.y);
       document.getElementById("status").innerText = "Tracking...";
-      
+
       // orientation
       window.addEventListener("deviceorientation", e => {
         currentHeading = e.alpha || 0; // degrees (0-360)
       });
 
-      // step detection via accelerometer
+      // step detection
       window.addEventListener("devicemotion", e => {
         if (!tracking) return;
         let acc = e.accelerationIncludingGravity;
         let magnitude = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
         let now = Date.now();
         
-        // detect step if sudden spike
         if (magnitude > 12 && (now - lastStepTime) > 400) {
           lastStepTime = now;
           moveStep();
@@ -70,24 +87,20 @@
     }
 
     function moveStep() {
-      // Convert heading to radians
       let rad = (currentHeading * Math.PI) / 180;
-      let stepSize = 10; // pixels per step
       let newX = position.x + stepSize * Math.sin(rad);
       let newY = position.y - stepSize * Math.cos(rad);
 
-      // draw line
       ctx.strokeStyle = "blue";
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(position.x, position.y);
       ctx.lineTo(newX, newY);
       ctx.stroke();
 
-      // save step
       path.push({x: newX, y: newY, heading: currentHeading, time: Date.now()});
-
-      // update position
       position = {x: newX, y: newY};
+      drawCircle(position.x, position.y);
     }
 
     function retrace() {
@@ -102,22 +115,42 @@
       function stepBack() {
         if (i >= reversed.length) {
           document.getElementById("status").innerText = "Back at start.";
+          document.getElementById("instruction").innerText = "You’re Home ✅";
+          document.getElementById("arrow").style.display = "none";
           return;
         }
 
         let step = reversed[i];
         ctx.strokeStyle = "red";
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(position.x, position.y);
         ctx.lineTo(step.x, step.y);
         ctx.stroke();
 
         position = {x: step.x, y: step.y};
+        drawCircle(position.x, position.y, "red");
+
+        // Direction indicator
+        let dir = getDirection(step.heading);
+        document.getElementById("instruction").innerText = dir.text;
+        document.getElementById("arrow").style.transform = `rotate(${dir.rotate}deg)`;
+        document.getElementById("arrow").style.display = "block";
+
         i++;
-        setTimeout(stepBack, 500); // delay per step
+        setTimeout(stepBack, 800); // animate step every 0.8s
       }
 
       stepBack();
+    }
+
+    function getDirection(heading) {
+      // Simplify heading to N, E, S, W
+      let angle = heading % 360;
+      if (angle >= 45 && angle < 135) return {text: "Go Right ➡️", rotate: 90};
+      if (angle >= 135 && angle < 225) return {text: "Go Back ⬇️", rotate: 180};
+      if (angle >= 225 && angle < 315) return {text: "Go Left ⬅️", rotate: -90};
+      return {text: "Go Forward ⬆️", rotate: 0};
     }
   </script>
 </body>
