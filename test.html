@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Tracer with Compass</title>
+  <title>Styled Step Tracer with Compass</title>
   <style>
     body {
       background:#111; 
@@ -18,7 +18,7 @@
       height:60vh; 
       overflow:auto; 
       border:2px solid cyan;
-      touch-action: pinch-zoom; /* allows zoom */
+      touch-action: pinch-zoom;
     }
     canvas {
       background:#222; 
@@ -31,7 +31,7 @@
       font-size:16px; 
     }
     #compass {
-      margin-top:10px;
+      margin-top:20px;
       width:200px; 
       height:200px; 
       border:4px solid cyan; 
@@ -39,23 +39,44 @@
       position:relative;
       margin-left:auto; 
       margin-right:auto;
+      overflow:hidden;
     }
-    #needle {
-      width:4px; 
-      height:90px; 
-      background:red; 
-      position:absolute; 
-      top:10px; 
-      left:50%; 
-      transform-origin:bottom center; 
-    }
-    #dirs {
+    #compass-rose {
       position:absolute;
-      top:50%; 
-      left:50%; 
-      transform:translate(-50%,-50%);
-      font-size:18px; 
+      width:100%; 
+      height:100%;
+      top:0; left:0;
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      transform-origin:center center;
       font-weight:bold;
+      color:#0ff;
+    }
+    .rose-text {
+      position:absolute;
+      font-size:16px;
+    }
+    .rose-text.big { font-size:20px; font-weight:bold; }
+    #pointer {
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-100%);
+      width:0; height:0;
+      border-left:10px solid transparent;
+      border-right:10px solid transparent;
+      border-bottom:20px solid red;
+      z-index:10;
+    }
+    #status {
+      position:fixed;
+      bottom:10px;
+      right:10px;
+      background:#000a;
+      padding:5px 10px;
+      border:1px solid #0ff;
+      border-radius:5px;
+      font-size:14px;
     }
   </style>
 </head>
@@ -73,9 +94,22 @@
 
   <!-- Compass -->
   <div id="compass">
-    <div id="needle"></div>
-    <div id="dirs">N</div>
+    <div id="compass-rose">
+      <div class="rose-text big" style="top:5px; left:50%; transform:translateX(-50%)">N</div>
+      <div class="rose-text big" style="bottom:5px; left:50%; transform:translateX(-50%)">S</div>
+      <div class="rose-text big" style="top:50%; left:5px; transform:translateY(-50%)">W</div>
+      <div class="rose-text big" style="top:50%; right:5px; transform:translateY(-50%)">E</div>
+
+      <div class="rose-text" style="top:25px; left:25px;">NW</div>
+      <div class="rose-text" style="top:25px; right:25px;">NE</div>
+      <div class="rose-text" style="bottom:25px; left:25px;">SW</div>
+      <div class="rose-text" style="bottom:25px; right:25px;">SE</div>
+    </div>
+    <div id="pointer"></div>
   </div>
+
+  <!-- Status -->
+  <div id="status">Start: --</div>
 
   <script>
     const canvas = document.getElementById("map");
@@ -87,6 +121,9 @@
     let walking = false;
     let path = [];
     let interval;
+
+    const statusBox = document.getElementById("status");
+    const rose = document.getElementById("compass-rose");
 
     // Draw user + path
     function drawUser(px, py) {
@@ -109,6 +146,12 @@
       if (walking) return;
       walking = true;
       path = [{x, y}];
+
+      // Record starting direction
+      const dirText = getDirection(angle);
+      const rounded = Math.round(angle);
+      statusBox.textContent = `Start: ${dirText} ${rounded}°`;
+
       interval = setInterval(() => {
         // move 10px every 5 seconds
         x += 10 * Math.sin(angle * Math.PI / 180);
@@ -139,9 +182,8 @@
     window.addEventListener("deviceorientation", (e) => {
       if (e.alpha !== null) {
         angle = e.alpha; // degrees
-        let dirText = getDirection(angle);
-        document.getElementById("dirs").innerText = dirText;
-        document.getElementById("needle").style.transform = `rotate(${angle}deg)`;
+        // Rotate the compass rose instead of a needle
+        rose.style.transform = `rotate(${-angle}deg)`;
       }
     });
 
