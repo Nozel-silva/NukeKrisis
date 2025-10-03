@@ -3,80 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Basic Compass</title>
+  <title>Step Retracer</title>
   <style>
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      margin: 0;
       background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       color: white;
       font-family: Arial, sans-serif;
-      flex-direction: column;
     }
-    #compass {
-      width: 250px;
-      height: 250px;
-      border: 6px solid #00f;
-      border-radius: 50%;
-      position: relative;
-    }
-    #arrow {
-      width: 6px;
-      height: 100px;
-      background: red;
-      position: absolute;
-      top: 25px;
-      left: 50%;
-      transform-origin: bottom center;
-    }
-    #heading {
-      margin-top: 20px;
-      font-size: 22px;
+    canvas {
+      background: #222;
+      margin: 10px;
+      border: 2px solid white;
     }
     button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
+      margin: 10px;
+      padding: 15px 25px;
+      font-size: 18px;
       border: none;
       border-radius: 8px;
-      background: #00f;
-      color: white;
+      cursor: pointer;
+    }
+    #controls {
+      margin: 15px;
     }
   </style>
 </head>
 <body>
-  <div id="compass">
-    <div id="arrow"></div>
+  <h2>Step Retracer</h2>
+  <canvas id="map" width="500" height="500"></canvas>
+  <div id="controls">
+    <button onclick="startJourney()">Start</button>
+    <button onclick="retrace()">Retrace</button>
+    <button onclick="clearMap()">Clear</button>
   </div>
-  <div id="heading">Heading: --°</div>
-  <button onclick="requestPermission()">Enable Compass</button>
 
   <script>
-    let arrow = document.getElementById("arrow");
-    let headingText = document.getElementById("heading");
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
 
-    function startCompass() {
-      window.addEventListener("deviceorientationabsolute", (event) => {
-        let heading = event.alpha; // degrees from north
-        if (heading !== null) {
-          arrow.style.transform = `rotate(${heading}deg)`;
-          headingText.innerText = "Heading: " + heading.toFixed(0) + "°";
+    let position = { x: 250, y: 250 };
+    let path = [];
+    let moving = false;
+    let moveInterval;
+
+    // Draw initial map with cardinal points
+    function drawBase() {
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText("N", canvas.width / 2 - 5, 20);
+      ctx.fillText("S", canvas.width / 2 - 5, canvas.height - 10);
+      ctx.fillText("W", 10, canvas.height / 2);
+      ctx.fillText("E", canvas.width - 20, canvas.height / 2);
+
+      drawCircle(position.x, position.y, "blue");
+    }
+
+    function drawCircle(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function move(dir) {
+      ctx.beginPath();
+      ctx.moveTo(position.x, position.y);
+
+      if (dir === "N") position.y -= 50;
+      if (dir === "S") position.y += 50;
+      if (dir === "E") position.x += 50;
+      if (dir === "W") position.x -= 50;
+
+      ctx.lineTo(position.x, position.y);
+      ctx.lineWidth = 50;
+      ctx.strokeStyle = "rgba(0,150,255,0.6)";
+      ctx.stroke();
+
+      path.push(dir);
+      drawCircle(position.x, position.y, "blue");
+    }
+
+    function startJourney() {
+      clearMap();
+      moving = true;
+      let directions = ["N", "E", "S", "W", "E", "N"]; // fake recorded walk
+      let i = 0;
+
+      moveInterval = setInterval(() => {
+        if (i < directions.length && moving) {
+          move(directions[i]);
+          i++;
+        } else {
+          clearInterval(moveInterval);
         }
-      }, true);
+      }, 1000);
     }
 
-    // iOS requires explicit permission
-    function requestPermission() {
-      if (typeof DeviceOrientationEvent.requestPermission === "function") {
-        DeviceOrientationEvent.requestPermission().then((response) => {
-          if (response === "granted") startCompass();
-        }).catch(console.error);
-      } else {
-        startCompass(); // Android
-      }
+    function retrace() {
+      if (path.length === 0) return;
+      moving = false;
+      clearInterval(moveInterval);
+
+      let reversed = [...path].reverse();
+      let i = 0;
+
+      let retraceInterval = setInterval(() => {
+        if (i < reversed.length) {
+          let dir = reversed[i];
+          let opposite = { N: "S", S: "N", E: "W", W: "E" };
+          move(opposite[dir]);
+          i++;
+        } else {
+          clearInterval(retraceInterval);
+        }
+      }, 1000);
     }
+
+    function clearMap() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      position = { x: 250, y: 250 };
+      path = [];
+      drawBase();
+    }
+
+    drawBase();
   </script>
 </body>
 </html>
