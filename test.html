@@ -3,20 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Path Tracer</title>
+  <title>Step Tracer with Compass</title>
   <style>
-    body { background:#111; color:#fff; text-align:center; font-family:sans-serif; }
-    canvas { background:#222; display:block; margin:20px auto; border:2px solid #0ff; }
-    button { margin:10px; padding:10px 20px; font-size:16px; }
+    body {
+      background:#111; 
+      color:#fff; 
+      font-family:sans-serif; 
+      margin:0; 
+      padding:0; 
+      text-align:center;
+    }
+    #container {
+      width:100%;
+      height:60vh; 
+      overflow:auto; 
+      border:2px solid cyan;
+      touch-action: pinch-zoom; /* allows zoom */
+    }
+    canvas {
+      background:#222; 
+      display:block; 
+      margin:auto; 
+    }
+    button { 
+      margin:10px; 
+      padding:10px 20px; 
+      font-size:16px; 
+    }
+    #compass {
+      margin-top:10px;
+      width:200px; 
+      height:200px; 
+      border:4px solid cyan; 
+      border-radius:50%; 
+      position:relative;
+      margin-left:auto; 
+      margin-right:auto;
+    }
+    #needle {
+      width:4px; 
+      height:90px; 
+      background:red; 
+      position:absolute; 
+      top:10px; 
+      left:50%; 
+      transform-origin:bottom center; 
+    }
+    #dirs {
+      position:absolute;
+      top:50%; 
+      left:50%; 
+      transform:translate(-50%,-50%);
+      font-size:18px; 
+      font-weight:bold;
+    }
   </style>
 </head>
 <body>
   <h2>Step Retracer</h2>
-  <canvas id="map" width="400" height="400"></canvas><br>
+
+  <!-- Tracing box -->
+  <div id="container">
+    <canvas id="map" width="800" height="800"></canvas>
+  </div>
+
   <button onclick="startWalk()">Start</button>
   <button onclick="stopWalk()">Stop</button>
   <button onclick="retrace()">Retrace</button>
-  <p id="dir">Direction: --</p>
+
+  <!-- Compass -->
+  <div id="compass">
+    <div id="needle"></div>
+    <div id="dirs">N</div>
+  </div>
 
   <script>
     const canvas = document.getElementById("map");
@@ -24,38 +83,39 @@
 
     let x = canvas.width / 2;
     let y = canvas.height / 2;
-    let angle = 0; // degrees
+    let angle = 0; // orientation degrees
     let walking = false;
     let path = [];
     let interval;
 
-    // Draw user as blue circle
+    // Draw user + path
     function drawUser(px, py) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if(path.length>0){
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        path.forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.strokeStyle = "cyan";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+      }
       ctx.beginPath();
-      ctx.moveTo(path[0]?.x || x, path[0]?.y || y);
-      path.forEach(p => ctx.lineTo(p.x, p.y));
-      ctx.strokeStyle = "cyan";
-      ctx.lineWidth = 5;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(px, py, 10, 0, Math.PI * 2);
+      ctx.arc(px, py, 12, 0, Math.PI * 2);
       ctx.fillStyle = "blue";
       ctx.fill();
     }
 
-    // Start walking (simulate forward movement)
     function startWalk() {
       if (walking) return;
       walking = true;
       path = [{x, y}];
       interval = setInterval(() => {
-        // Move 5px each step
-        x += 5 * Math.sin(angle * Math.PI / 180);
-        y -= 5 * Math.cos(angle * Math.PI / 180);
+        // move 10px every 5 seconds
+        x += 10 * Math.sin(angle * Math.PI / 180);
+        y -= 10 * Math.cos(angle * Math.PI / 180);
         path.push({x, y});
         drawUser(x, y);
-      }, 500);
+      }, 5000);
     }
 
     function stopWalk() {
@@ -72,7 +132,7 @@
         let pos = path[i];
         drawUser(pos.x, pos.y);
         i--;
-      }, 500);
+      }, 5000);
     }
 
     // Compass orientation
@@ -80,7 +140,8 @@
       if (e.alpha !== null) {
         angle = e.alpha; // degrees
         let dirText = getDirection(angle);
-        document.getElementById("dir").innerText = "Direction: " + dirText;
+        document.getElementById("dirs").innerText = dirText;
+        document.getElementById("needle").style.transform = `rotate(${angle}deg)`;
       }
     });
 
@@ -94,6 +155,8 @@
       if (deg < 292.5) return "W";
       return "NW";
     }
+
+    drawUser(x,y);
   </script>
 </body>
 </html>
