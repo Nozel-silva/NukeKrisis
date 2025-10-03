@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Retracer</title>
+  <title>Step Retracer (Real Sensors)</title>
   <style>
     body {
       margin: 0;
@@ -11,9 +11,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       color: white;
       font-family: Arial, sans-serif;
+    }
+    h2 {
+      margin: 10px;
     }
     canvas {
       background: #222;
@@ -21,7 +23,7 @@
       border: 2px solid white;
     }
     button {
-      margin: 10px;
+      margin: 8px;
       padding: 15px 25px;
       font-size: 18px;
       border: none;
@@ -29,29 +31,36 @@
       cursor: pointer;
     }
     #controls {
-      margin: 15px;
+      margin: 10px;
+    }
+    #direction {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 5px;
+      color: #4fc3f7;
     }
   </style>
 </head>
 <body>
   <h2>Step Retracer</h2>
+  <div id="direction">Facing: ?</div>
   <canvas id="map" width="500" height="500"></canvas>
   <div id="controls">
-    <button onclick="startJourney()">Start</button>
-    <button onclick="retrace()">Retrace</button>
+    <button onclick="requestAccess()">Enable Sensors</button>
     <button onclick="clearMap()">Clear</button>
+    <button onclick="retrace()">Retrace</button>
   </div>
 
   <script>
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
+    const directionLabel = document.getElementById("direction");
 
     let position = { x: 250, y: 250 };
     let path = [];
-    let moving = false;
-    let moveInterval;
+    let lastStepTime = 0;
+    let currentHeading = 0; // degrees (0 = north)
 
-    // Draw initial map with cardinal points
     function drawBase() {
       ctx.fillStyle = "#222";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -74,58 +83,69 @@
       ctx.closePath();
     }
 
-    function move(dir) {
+    function moveStep(heading) {
       ctx.beginPath();
       ctx.moveTo(position.x, position.y);
 
-      if (dir === "N") position.y -= 50;
-      if (dir === "S") position.y += 50;
-      if (dir === "E") position.x += 50;
-      if (dir === "W") position.x -= 50;
+      // Convert heading to radians
+      let rad = heading * Math.PI / 180;
+
+      // Move 50px in heading direction
+      position.x += Math.sin(rad) * 50;
+      position.y -= Math.cos(rad) * 50;
 
       ctx.lineTo(position.x, position.y);
       ctx.lineWidth = 50;
       ctx.strokeStyle = "rgba(0,150,255,0.6)";
       ctx.stroke();
 
-      path.push(dir);
+      path.push(heading);
       drawCircle(position.x, position.y, "blue");
     }
 
-    function startJourney() {
-      clearMap();
-      moving = true;
-      let directions = ["N", "E", "S", "W", "E", "N"]; // fake recorded walk
-      let i = 0;
+    function detectStep(accel) {
+      const now = Date.now();
+      const magnitude = Math.sqrt(
+        accel.x * accel.x + accel.y * accel.y + accel.z * accel.z
+      );
 
-      moveInterval = setInterval(() => {
-        if (i < directions.length && moving) {
-          move(directions[i]);
-          i++;
-        } else {
-          clearInterval(moveInterval);
-        }
-      }, 1000);
+      // crude threshold for step detection
+      if (magnitude > 15 && (now - lastStepTime > 400)) {
+        lastStepTime = now;
+        moveStep(currentHeading);
+      }
+    }
+
+    function handleOrientation(event) {
+      if (event.absolute || event.webkitCompassHeading !== undefined) {
+        currentHeading = event.webkitCompassHeading || 360 - event.alpha;
+      } else {
+        currentHeading = event.alpha; 
+      }
+
+      // Convert heading to cardinal direction
+      let dir;
+      if (currentHeading >= 315 || currentHeading < 45) dir = "N";
+      else if (currentHeading >= 45 && currentHeading < 135) dir = "E";
+      else if (currentHeading >= 135 && currentHeading < 225) dir = "S";
+      else dir = "W";
+
+      directionLabel.textContent = `Facing: ${dir} (${Math.round(currentHeading)}°)`;
     }
 
     function retrace() {
       if (path.length === 0) return;
-      moving = false;
-      clearInterval(moveInterval);
-
       let reversed = [...path].reverse();
       let i = 0;
-
       let retraceInterval = setInterval(() => {
         if (i < reversed.length) {
-          let dir = reversed[i];
-          let opposite = { N: "S", S: "N", E: "W", W: "E" };
-          move(opposite[dir]);
+          let heading = (reversed[i] + 180) % 360; // opposite direction
+          moveStep(heading);
           i++;
         } else {
           clearInterval(retraceInterval);
         }
-      }, 1000);
+      }, 600);
     }
 
     function clearMap() {
@@ -133,6 +153,22 @@
       position = { x: 250, y: 250 };
       path = [];
       drawBase();
+    }
+
+    function requestAccess() {
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission().then(response => {
+          if (response === "granted") {
+            window.addEventListener("devicemotion", e => detectStep(e.accelerationIncludingGravity));
+            window.addEventListener("deviceorientation", handleOrientation, true);
+          }
+        }).catch(console.error);
+      } else {
+        // Android
+        window.addEventListener("devicemotion", e => detectStep(e.accelerationIncludingGravity));
+        window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+        window.addEventListener("deviceorientation", handleOrientation, true);
+      }
     }
 
     drawBase();
