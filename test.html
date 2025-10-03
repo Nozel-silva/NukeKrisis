@@ -161,7 +161,7 @@
         y -= 10 * Math.cos(angle * Math.PI / 180);
         path.push({x, y});
         drawUser(x, y);
-      }, 5000);
+      }, 1000);
     }
 
     function stopWalk() {
@@ -179,7 +179,7 @@
         if (i < 0) {
           clearInterval(retraceInt); // stop at start point
         }
-      }, 5000);
+      }, 3000);
     }
 
     // Compass orientation
