@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Styled Step Tracer with Compass</title>
+  <title>Step Tracer with Compass</title>
   <style>
     body {
       background:#111; 
@@ -63,9 +63,9 @@
       top:50%; left:50%;
       transform:translate(-50%,-100%);
       width:0; height:0;
-      border-left:10px solid transparent;
-      border-right:10px solid transparent;
-      border-bottom:20px solid red;
+      border-left:15px solid transparent;
+      border-right:15px solid transparent;
+      border-bottom:30px solid red;
       z-index:10;
     }
     #status {
@@ -85,7 +85,7 @@
 
   <!-- Tracing box -->
   <div id="container">
-    <canvas id="map" width="800" height="800"></canvas>
+    <canvas id="map" width="1200" height="1200"></canvas>
   </div>
 
   <button onclick="startWalk()">Start</button>
@@ -128,16 +128,19 @@
     // Draw user + path
     function drawUser(px, py) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       if(path.length>0){
         ctx.beginPath();
         ctx.moveTo(path[0].x, path[0].y);
         path.forEach(p => ctx.lineTo(p.x, p.y));
         ctx.strokeStyle = "cyan";
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 50; // enlarged trace line
+        ctx.lineCap = "round";
         ctx.stroke();
       }
+
       ctx.beginPath();
-      ctx.arc(px, py, 12, 0, Math.PI * 2);
+      ctx.arc(px, py, 35, 0, Math.PI * 2); // enlarged dot (70px wide)
       ctx.fillStyle = "blue";
       ctx.fill();
     }
@@ -171,10 +174,11 @@
       stopWalk();
       let i = path.length - 1;
       const retraceInt = setInterval(() => {
-        if (i <= 0) { clearInterval(retraceInt); return; }
-        let pos = path[i];
-        drawUser(pos.x, pos.y);
+        drawUser(path[i].x, path[i].y);
         i--;
+        if (i < 0) {
+          clearInterval(retraceInt); // stop at start point
+        }
       }, 5000);
     }
 
