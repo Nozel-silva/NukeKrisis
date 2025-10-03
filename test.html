@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Retracer (Real Sensors)</title>
+  <title>Compass</title>
   <style>
     body {
       margin: 0;
@@ -11,167 +11,97 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+      height: 100vh;
       color: white;
       font-family: Arial, sans-serif;
     }
-    h2 {
-      margin: 10px;
-    }
-    canvas {
+    #compass {
+      width: 300px;
+      height: 300px;
+      border: 6px solid #4fc3f7;
+      border-radius: 50%;
+      position: relative;
       background: #222;
-      margin: 10px;
-      border: 2px solid white;
     }
-    button {
-      margin: 8px;
-      padding: 15px 25px;
+    .direction {
+      position: absolute;
       font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      font-weight: bold;
+      color: #fff;
+      transform: translate(-50%, -50%);
     }
-    #controls {
-      margin: 10px;
+    #needle {
+      width: 6px;
+      height: 140px;
+      background: red;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform-origin: bottom center;
+      transform: rotate(0deg);
+      border-radius: 3px;
     }
-    #direction {
+    #heading {
+      margin-top: 20px;
       font-size: 22px;
       font-weight: bold;
-      margin-top: 5px;
       color: #4fc3f7;
     }
   </style>
 </head>
 <body>
-  <h2>Step Retracer</h2>
-  <div id="direction">Facing: ?</div>
-  <canvas id="map" width="500" height="500"></canvas>
-  <div id="controls">
-    <button onclick="requestAccess()">Enable Sensors</button>
-    <button onclick="clearMap()">Clear</button>
-    <button onclick="retrace()">Retrace</button>
+  <div id="compass">
+    <div id="needle"></div>
+    <!-- Cardinal + Intercardinal points -->
+    <div class="direction" style="top:10px;left:50%;">N</div>
+    <div class="direction" style="top:50%;left:290px;">E</div>
+    <div class="direction" style="top:290px;left:50%;">S</div>
+    <div class="direction" style="top:50%;left:10px;">W</div>
+    
+    <div class="direction" style="top:50px;left:240px;">NE</div>
+    <div class="direction" style="top:240px;left:240px;">SE</div>
+    <div class="direction" style="top:240px;left:60px;">SW</div>
+    <div class="direction" style="top:50px;left:60px;">NW</div>
   </div>
+  <div id="heading">Heading: ?°</div>
 
   <script>
-    const canvas = document.getElementById("map");
-    const ctx = canvas.getContext("2d");
-    const directionLabel = document.getElementById("direction");
-
-    let position = { x: 250, y: 250 };
-    let path = [];
-    let lastStepTime = 0;
-    let currentHeading = 0; // degrees (0 = north)
-
-    function drawBase() {
-      ctx.fillStyle = "#222";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
-      ctx.fillText("N", canvas.width / 2 - 5, 20);
-      ctx.fillText("S", canvas.width / 2 - 5, canvas.height - 10);
-      ctx.fillText("W", 10, canvas.height / 2);
-      ctx.fillText("E", canvas.width - 20, canvas.height / 2);
-
-      drawCircle(position.x, position.y, "blue");
-    }
-
-    function drawCircle(x, y, color) {
-      ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function moveStep(heading) {
-      ctx.beginPath();
-      ctx.moveTo(position.x, position.y);
-
-      // Convert heading to radians
-      let rad = heading * Math.PI / 180;
-
-      // Move 50px in heading direction
-      position.x += Math.sin(rad) * 50;
-      position.y -= Math.cos(rad) * 50;
-
-      ctx.lineTo(position.x, position.y);
-      ctx.lineWidth = 50;
-      ctx.strokeStyle = "rgba(0,150,255,0.6)";
-      ctx.stroke();
-
-      path.push(heading);
-      drawCircle(position.x, position.y, "blue");
-    }
-
-    function detectStep(accel) {
-      const now = Date.now();
-      const magnitude = Math.sqrt(
-        accel.x * accel.x + accel.y * accel.y + accel.z * accel.z
-      );
-
-      // crude threshold for step detection
-      if (magnitude > 15 && (now - lastStepTime > 400)) {
-        lastStepTime = now;
-        moveStep(currentHeading);
-      }
-    }
+    const needle = document.getElementById("needle");
+    const headingText = document.getElementById("heading");
 
     function handleOrientation(event) {
-      if (event.absolute || event.webkitCompassHeading !== undefined) {
-        currentHeading = event.webkitCompassHeading || 360 - event.alpha;
+      let heading;
+
+      if (event.webkitCompassHeading !== undefined) {
+        // iOS
+        heading = event.webkitCompassHeading;
       } else {
-        currentHeading = event.alpha; 
+        // Android
+        heading = 360 - event.alpha;
       }
 
-      // Convert heading to cardinal direction
-      let dir;
-      if (currentHeading >= 315 || currentHeading < 45) dir = "N";
-      else if (currentHeading >= 45 && currentHeading < 135) dir = "E";
-      else if (currentHeading >= 135 && currentHeading < 225) dir = "S";
-      else dir = "W";
-
-      directionLabel.textContent = `Facing: ${dir} (${Math.round(currentHeading)}°)`;
-    }
-
-    function retrace() {
-      if (path.length === 0) return;
-      let reversed = [...path].reverse();
-      let i = 0;
-      let retraceInterval = setInterval(() => {
-        if (i < reversed.length) {
-          let heading = (reversed[i] + 180) % 360; // opposite direction
-          moveStep(heading);
-          i++;
-        } else {
-          clearInterval(retraceInterval);
-        }
-      }, 600);
-    }
-
-    function clearMap() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      position = { x: 250, y: 250 };
-      path = [];
-      drawBase();
+      if (heading !== null) {
+        needle.style.transform = `rotate(${heading}deg)`;
+        headingText.textContent = `Heading: ${Math.round(heading)}°`;
+      }
     }
 
     function requestAccess() {
-      if (typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission().then(response => {
-          if (response === "granted") {
-            window.addEventListener("devicemotion", e => detectStep(e.accelerationIncludingGravity));
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(response => {
+          if (response === 'granted') {
             window.addEventListener("deviceorientation", handleOrientation, true);
           }
         }).catch(console.error);
       } else {
-        // Android
-        window.addEventListener("devicemotion", e => detectStep(e.accelerationIncludingGravity));
         window.addEventListener("deviceorientationabsolute", handleOrientation, true);
         window.addEventListener("deviceorientation", handleOrientation, true);
       }
     }
 
-    drawBase();
+    // Ask for motion permission on load
+    requestAccess();
   </script>
 </body>
 </html>
