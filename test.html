@@ -2,148 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Step Retracer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic Compass</title>
   <style>
-    body { text-align: center; font-family: sans-serif; }
-    canvas { border: 2px solid #000; margin-top: 10px; background: #eef; }
-    button { margin: 10px; padding: 15px 25px; font-size: 18px; }
-    #indicator { font-size: 22px; font-weight: bold; margin-top: 10px; }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      flex-direction: column;
+    }
+    #compass {
+      width: 250px;
+      height: 250px;
+      border: 6px solid #00f;
+      border-radius: 50%;
+      position: relative;
+    }
+    #arrow {
+      width: 6px;
+      height: 100px;
+      background: red;
+      position: absolute;
+      top: 25px;
+      left: 50%;
+      transform-origin: bottom center;
+    }
+    #heading {
+      margin-top: 20px;
+      font-size: 22px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #00f;
+      color: white;
+    }
   </style>
 </head>
 <body>
-  <h2>Step Retracer (Demo)</h2>
-  <button onclick="requestAccess()">Enable Sensors</button>
-  <button onclick="startTracking()">Start</button>
-  <button onclick="stopTracking()">Stop</button>
-  <button onclick="retrace()">Retrace</button>
-  <p id="status">Idle...</p>
-  <canvas id="map" width="400" height="400"></canvas>
-  <div id="indicator">
-    <span id="instruction"></span>
+  <div id="compass">
+    <div id="arrow"></div>
   </div>
+  <div id="heading">Heading: --°</div>
+  <button onclick="requestPermission()">Enable Compass</button>
 
   <script>
-    const canvas = document.getElementById("map");
-    const ctx = canvas.getContext("2d");
+    let arrow = document.getElementById("arrow");
+    let headingText = document.getElementById("heading");
 
-    let tracking = false;
-    let position = {x: 200, y: 350}; // start bottom middle
-    let path = [];
-    let currentHeading = 0;
-    const stepSize = 50;
-    const circleRadius = 15;
-
-    // draw initial circle
-    drawCircle(position.x, position.y, "blue");
-
-    function drawCircle(x, y, color="blue") {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, circleRadius, 0, Math.PI*2);
-      ctx.fill();
+    function startCompass() {
+      window.addEventListener("deviceorientationabsolute", (event) => {
+        let heading = event.alpha; // degrees from north
+        if (heading !== null) {
+          arrow.style.transform = `rotate(${heading}deg)`;
+          headingText.innerText = "Heading: " + heading.toFixed(0) + "°";
+        }
+      }, true);
     }
 
-    // request permission (needed on iOS Safari)
-    function requestAccess() {
-      if (typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-          .then(resp => {
-            if (resp === "granted") {
-              document.getElementById("status").innerText = "Sensors enabled ✅";
-            } else {
-              alert("Permission denied");
-            }
-          })
-          .catch(console.error);
+    // iOS requires explicit permission
+    function requestPermission() {
+      if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then((response) => {
+          if (response === "granted") startCompass();
+        }).catch(console.error);
       } else {
-        document.getElementById("status").innerText = "No special permission needed ✅";
+        startCompass(); // Android
       }
-    }
-
-    function startTracking() {
-      tracking = true;
-      path = [];
-      position = {x: 200, y: 350};
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      drawCircle(position.x, position.y, "blue");
-      document.getElementById("status").innerText = "Tracking... (walk & tilt)";
-
-      window.addEventListener("deviceorientation", e => {
-        currentHeading = e.alpha || 0;
-      });
-
-      window.addEventListener("devicemotion", e => {
-        if (!tracking) return;
-        let acc = e.accelerationIncludingGravity;
-        let mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-        if (mag > 12) {
-          moveStep();
-        }
-      });
-    }
-
-    function stopTracking() {
-      tracking = false;
-      document.getElementById("status").innerText = "Stopped.";
-    }
-
-    function moveStep() {
-      let rad = (currentHeading * Math.PI) / 180;
-      let newX = position.x + stepSize * Math.sin(rad);
-      let newY = position.y - stepSize * Math.cos(rad);
-
-      ctx.strokeStyle = "blue";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(position.x, position.y);
-      ctx.lineTo(newX, newY);
-      ctx.stroke();
-
-      position = {x: newX, y: newY};
-      drawCircle(position.x, position.y, "blue");
-      path.push({x: newX, y: newY, heading: currentHeading});
-    }
-
-    function retrace() {
-      if (path.length === 0) return alert("No path recorded.");
-      document.getElementById("status").innerText = "Retracing...";
-
-      let reversed = [...path].reverse();
-      let i = 0;
-
-      function stepBack() {
-        if (i >= reversed.length) {
-          document.getElementById("status").innerText = "Back at start ✅";
-          document.getElementById("instruction").innerText = "You’re Home!";
-          return;
-        }
-
-        let step = reversed[i];
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(position.x, position.y);
-        ctx.lineTo(step.x, step.y);
-        ctx.stroke();
-
-        position = {x: step.x, y: step.y};
-        drawCircle(position.x, position.y, "red");
-
-        document.getElementById("instruction").innerText = getDirection(step.heading);
-
-        i++;
-        setTimeout(stepBack, 800);
-      }
-
-      stepBack();
-    }
-
-    function getDirection(heading) {
-      let angle = heading % 360;
-      if (angle >= 45 && angle < 135) return "➡️ Go Right";
-      if (angle >= 135 && angle < 225) return "⬇️ Go Back";
-      if (angle >= 225 && angle < 315) return "⬅️ Go Left";
-      return "⬆️ Go Forward";
     }
   </script>
 </body>
