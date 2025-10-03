@@ -2,110 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Step Retracer (Maps Style)</title>
+  <title>Step Retracer</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
-    #topbar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #4285F4;
-      color: white;
-      padding: 15px;
-      font-size: 22px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 15px;
-    }
-    button {
-      padding: 15px 25px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:nth-child(1) { background: #34A853; color: white; }
-    button:nth-child(2) { background: #EA4335; color: white; }
-    button:nth-child(3) { background: #FBBC05; color: black; }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
+    body { text-align: center; font-family: sans-serif; }
+    canvas { border: 2px solid #000; margin-top: 10px; background: #eef; }
+    button { margin: 10px; padding: 15px 25px; font-size: 18px; }
+    #indicator { font-size: 22px; font-weight: bold; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <div id="topbar">Idle...</div>
-  <canvas id="map"></canvas>
-  <div id="controls">
-    <button onclick="startTracking()">Start</button>
-    <button onclick="stopTracking()">Stop</button>
-    <button onclick="retrace()">Retrace</button>
+  <h2>Step Retracer (Demo)</h2>
+  <button onclick="requestAccess()">Enable Sensors</button>
+  <button onclick="startTracking()">Start</button>
+  <button onclick="stopTracking()">Stop</button>
+  <button onclick="retrace()">Retrace</button>
+  <p id="status">Idle...</p>
+  <canvas id="map" width="400" height="400"></canvas>
+  <div id="indicator">
+    <span id="instruction"></span>
   </div>
 
   <script>
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
 
     let tracking = false;
-    let position = {x: canvas.width/2, y: canvas.height-100};
+    let position = {x: 200, y: 350}; // start bottom middle
     let path = [];
-    let lastStepTime = Date.now();
     let currentHeading = 0;
-    const stepSize = 60;
+    const stepSize = 50;
+    const circleRadius = 15;
+
+    // draw initial circle
+    drawCircle(position.x, position.y, "blue");
 
     function drawCircle(x, y, color="blue") {
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.arc(x, y, circleRadius, 0, Math.PI*2);
       ctx.fill();
     }
 
-    function drawArrowAlongLine(x1, y1, x2, y2, color="blue") {
-      let dx = x2 - x1;
-      let dy = y2 - y1;
-      let angle = Math.atan2(dy, dx);
-
-      let step = 20;
-      let dist = Math.hypot(dx, dy);
-
-      for (let i = step; i < dist; i += step) {
-        let px = x1 + (dx * i / dist);
-        let py = y1 + (dy * i / dist);
-
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(angle);
-        ctx.fillStyle = color;
-        ctx.fillText(">", 0, 0);
-        ctx.restore();
+    // request permission (needed on iOS Safari)
+    function requestAccess() {
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+          .then(resp => {
+            if (resp === "granted") {
+              document.getElementById("status").innerText = "Sensors enabled ✅";
+            } else {
+              alert("Permission denied");
+            }
+          })
+          .catch(console.error);
+      } else {
+        document.getElementById("status").innerText = "No special permission needed ✅";
       }
     }
 
     function startTracking() {
-      if (tracking) return;
       tracking = true;
       path = [];
-      position = {x: canvas.width/2, y: canvas.height-100};
+      position = {x: 200, y: 350};
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      drawCircle(position.x, position.y);
-      document.getElementById("topbar").innerText = "Tracking...";
+      drawCircle(position.x, position.y, "blue");
+      document.getElementById("status").innerText = "Tracking... (walk & tilt)";
 
       window.addEventListener("deviceorientation", e => {
         currentHeading = e.alpha || 0;
@@ -114,10 +75,8 @@
       window.addEventListener("devicemotion", e => {
         if (!tracking) return;
         let acc = e.accelerationIncludingGravity;
-        let magnitude = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-        let now = Date.now();
-        if (magnitude > 12 && (now - lastStepTime) > 400) {
-          lastStepTime = now;
+        let mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+        if (mag > 12) {
           moveStep();
         }
       });
@@ -125,7 +84,7 @@
 
     function stopTracking() {
       tracking = false;
-      document.getElementById("topbar").innerText = "Stopped.";
+      document.getElementById("status").innerText = "Stopped.";
     }
 
     function moveStep() {
@@ -134,58 +93,57 @@
       let newY = position.y - stepSize * Math.cos(rad);
 
       ctx.strokeStyle = "blue";
-      ctx.setLineDash([10, 15]);
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(position.x, position.y);
       ctx.lineTo(newX, newY);
       ctx.stroke();
-      ctx.setLineDash([]);
 
-      drawArrowAlongLine(position.x, position.y, newX, newY, "blue");
-
-      path.push({x: newX, y: newY, heading: currentHeading});
       position = {x: newX, y: newY};
-      drawCircle(position.x, position.y);
+      drawCircle(position.x, position.y, "blue");
+      path.push({x: newX, y: newY, heading: currentHeading});
     }
 
     function retrace() {
-      if (tracking) return alert("Stop tracking first!");
       if (path.length === 0) return alert("No path recorded.");
-
-      document.getElementById("topbar").innerText = "Retracing...";
+      document.getElementById("status").innerText = "Retracing...";
 
       let reversed = [...path].reverse();
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      position = {x: canvas.width/2, y: canvas.height-100};
-      drawCircle(position.x, position.y);
-
       let i = 0;
+
       function stepBack() {
         if (i >= reversed.length) {
-          document.getElementById("topbar").innerText = "You’re Home ✅";
+          document.getElementById("status").innerText = "Back at start ✅";
+          document.getElementById("instruction").innerText = "You’re Home!";
           return;
         }
 
         let step = reversed[i];
         ctx.strokeStyle = "red";
-        ctx.setLineDash([10, 15]);
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 5;
         ctx.beginPath();
         ctx.moveTo(position.x, position.y);
         ctx.lineTo(step.x, step.y);
         ctx.stroke();
-        ctx.setLineDash([]);
-
-        drawArrowAlongLine(position.x, position.y, step.x, step.y, "red");
 
         position = {x: step.x, y: step.y};
         drawCircle(position.x, position.y, "red");
 
+        document.getElementById("instruction").innerText = getDirection(step.heading);
+
         i++;
-        setTimeout(stepBack, 900);
+        setTimeout(stepBack, 800);
       }
+
       stepBack();
+    }
+
+    function getDirection(heading) {
+      let angle = heading % 360;
+      if (angle >= 45 && angle < 135) return "➡️ Go Right";
+      if (angle >= 135 && angle < 225) return "⬇️ Go Back";
+      if (angle >= 225 && angle < 315) return "⬅️ Go Left";
+      return "⬆️ Go Forward";
     }
   </script>
 </body>
