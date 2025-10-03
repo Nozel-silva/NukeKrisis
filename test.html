@@ -3,105 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compass</title>
+  <title>Path Tracer</title>
   <style>
-    body {
-      margin: 0;
-      background: #111;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
-    #compass {
-      width: 300px;
-      height: 300px;
-      border: 6px solid #4fc3f7;
-      border-radius: 50%;
-      position: relative;
-      background: #222;
-    }
-    .direction {
-      position: absolute;
-      font-size: 18px;
-      font-weight: bold;
-      color: #fff;
-      transform: translate(-50%, -50%);
-    }
-    #needle {
-      width: 6px;
-      height: 140px;
-      background: red;
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform-origin: bottom center;
-      transform: rotate(0deg);
-      border-radius: 3px;
-    }
-    #heading {
-      margin-top: 20px;
-      font-size: 22px;
-      font-weight: bold;
-      color: #4fc3f7;
-    }
+    body { background:#111; color:#fff; text-align:center; font-family:sans-serif; }
+    canvas { background:#222; display:block; margin:20px auto; border:2px solid #0ff; }
+    button { margin:10px; padding:10px 20px; font-size:16px; }
   </style>
 </head>
 <body>
-  <div id="compass">
-    <div id="needle"></div>
-    <!-- Cardinal + Intercardinal points -->
-    <div class="direction" style="top:10px;left:50%;">N</div>
-    <div class="direction" style="top:50%;left:290px;">E</div>
-    <div class="direction" style="top:290px;left:50%;">S</div>
-    <div class="direction" style="top:50%;left:10px;">W</div>
-    
-    <div class="direction" style="top:50px;left:240px;">NE</div>
-    <div class="direction" style="top:240px;left:240px;">SE</div>
-    <div class="direction" style="top:240px;left:60px;">SW</div>
-    <div class="direction" style="top:50px;left:60px;">NW</div>
-  </div>
-  <div id="heading">Heading: ?°</div>
+  <h2>Step Retracer</h2>
+  <canvas id="map" width="400" height="400"></canvas><br>
+  <button onclick="startWalk()">Start</button>
+  <button onclick="stopWalk()">Stop</button>
+  <button onclick="retrace()">Retrace</button>
+  <p id="dir">Direction: --</p>
 
   <script>
-    const needle = document.getElementById("needle");
-    const headingText = document.getElementById("heading");
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
 
-    function handleOrientation(event) {
-      let heading;
+    let x = canvas.width / 2;
+    let y = canvas.height / 2;
+    let angle = 0; // degrees
+    let walking = false;
+    let path = [];
+    let interval;
 
-      if (event.webkitCompassHeading !== undefined) {
-        // iOS
-        heading = event.webkitCompassHeading;
-      } else {
-        // Android
-        heading = 360 - event.alpha;
-      }
-
-      if (heading !== null) {
-        needle.style.transform = `rotate(${heading}deg)`;
-        headingText.textContent = `Heading: ${Math.round(heading)}°`;
-      }
+    // Draw user as blue circle
+    function drawUser(px, py) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.moveTo(path[0]?.x || x, path[0]?.y || y);
+      path.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.strokeStyle = "cyan";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "blue";
+      ctx.fill();
     }
 
-    function requestAccess() {
-      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(response => {
-          if (response === 'granted') {
-            window.addEventListener("deviceorientation", handleOrientation, true);
-          }
-        }).catch(console.error);
-      } else {
-        window.addEventListener("deviceorientationabsolute", handleOrientation, true);
-        window.addEventListener("deviceorientation", handleOrientation, true);
-      }
+    // Start walking (simulate forward movement)
+    function startWalk() {
+      if (walking) return;
+      walking = true;
+      path = [{x, y}];
+      interval = setInterval(() => {
+        // Move 5px each step
+        x += 5 * Math.sin(angle * Math.PI / 180);
+        y -= 5 * Math.cos(angle * Math.PI / 180);
+        path.push({x, y});
+        drawUser(x, y);
+      }, 500);
     }
 
-    // Ask for motion permission on load
-    requestAccess();
+    function stopWalk() {
+      walking = false;
+      clearInterval(interval);
+    }
+
+    function retrace() {
+      if (path.length < 2) return;
+      stopWalk();
+      let i = path.length - 1;
+      const retraceInt = setInterval(() => {
+        if (i <= 0) { clearInterval(retraceInt); return; }
+        let pos = path[i];
+        drawUser(pos.x, pos.y);
+        i--;
+      }, 500);
+    }
+
+    // Compass orientation
+    window.addEventListener("deviceorientation", (e) => {
+      if (e.alpha !== null) {
+        angle = e.alpha; // degrees
+        let dirText = getDirection(angle);
+        document.getElementById("dir").innerText = "Direction: " + dirText;
+      }
+    });
+
+    function getDirection(deg) {
+      if (deg >= 337.5 || deg < 22.5) return "N";
+      if (deg < 67.5) return "NE";
+      if (deg < 112.5) return "E";
+      if (deg < 157.5) return "SE";
+      if (deg < 202.5) return "S";
+      if (deg < 247.5) return "SW";
+      if (deg < 292.5) return "W";
+      return "NW";
+    }
   </script>
 </body>
 </html>
